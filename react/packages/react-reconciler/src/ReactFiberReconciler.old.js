@@ -256,17 +256,19 @@ export function createContainer(
 ): OpaqueRoot {
   const hydrate = false;
   const initialChildren = null;
+  // createRootContainer → createFiberRoot
+  // ??Container和Fiber的关系
   return createFiberRoot(
-    containerInfo,
-    tag,
-    hydrate,
-    initialChildren,
-    hydrationCallbacks,
-    isStrictMode,
-    concurrentUpdatesByDefaultOverride,
-    identifierPrefix,
-    onRecoverableError,
-    transitionCallbacks,
+    containerInfo, // 根节点
+    tag, // ConcurrentRoot 1
+    hydrate, // 客户端渲染为false
+    initialChildren, // container被设置为 null
+    hydrationCallbacks, // 首次渲染被设置为 null
+    isStrictMode, // 由createRoot传入false
+    concurrentUpdatesByDefaultOverride,// 由createRoot传入false
+    identifierPrefix,// 由createRoot传入""
+    onRecoverableError,// 由createRoot传入 未知
+    transitionCallbacks,// 由createRoot传入 未知
   );
 }
 

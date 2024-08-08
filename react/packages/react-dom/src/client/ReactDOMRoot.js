@@ -86,6 +86,7 @@ const defaultOnRecoverableError =
       };
 
 function ReactDOMRoot(internalRoot: FiberRoot) {
+  // 创建一个ReactDOMRoot类，其中_internalRoot指向FiberRoot
   this._internalRoot = internalRoot;
 }
 
@@ -221,24 +222,32 @@ export function createRoot(
     }
   }
 
+  // root是一个关联了HostFiberNode的FiberRoot
+  // root.current与HostFiber的stateNode互相关联
+
   const root = createContainer(
-    container,
-    ConcurrentRoot,
+    container, // 根节点
+    ConcurrentRoot, // 最新渲染方式 1
     null,
-    isStrictMode,
-    concurrentUpdatesByDefaultOverride,
-    identifierPrefix,
-    onRecoverableError,
-    transitionCallbacks,
+    isStrictMode, // 严格模式默认 false
+    concurrentUpdatesByDefaultOverride, // 未知 false
+    identifierPrefix, // 未知 ''
+    onRecoverableError, // 未知 回调函数
+    transitionCallbacks, // 未知 回调函数
   );
   markContainerAsRoot(root.current, container);
 
   const rootContainerElement: Document | Element | DocumentFragment =
+    // nodeType 是html元素类型的一个枚举 例如div是1
+    // COMMENT_NODE 8 文本类型节点
     container.nodeType === COMMENT_NODE
       ? (container.parentNode: any)
       : container;
+  
+  // 事件委托机制
   listenToAllSupportedEvents(rootContainerElement);
 
+  // 
   return new ReactDOMRoot(root);
 }
 

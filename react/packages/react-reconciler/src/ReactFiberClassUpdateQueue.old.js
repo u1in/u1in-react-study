@@ -166,6 +166,8 @@ if (__DEV__) {
 }
 
 export function initializeUpdateQueue<State>(fiber: Fiber): void {
+  // 构建一个事件对象
+  // uninitializedFiber 为 HostFiberNode
   const queue: UpdateQueue<State> = {
     baseState: fiber.memoizedState,
     firstBaseUpdate: null,
@@ -177,6 +179,7 @@ export function initializeUpdateQueue<State>(fiber: Fiber): void {
     },
     effects: null,
   };
+  // 给HostFiberNode的updateQueue设置为该对象
   fiber.updateQueue = queue;
 }
 

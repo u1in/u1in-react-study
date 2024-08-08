@@ -60,6 +60,7 @@ export function precacheFiberNode(
 }
 
 export function markContainerAsRoot(hostRoot: Fiber, node: Container): void {
+  // 根节点dom的'__reactContainer$' + randomKey的值设置为HostFiber
   node[internalContainerInstanceKey] = hostRoot;
 }
 

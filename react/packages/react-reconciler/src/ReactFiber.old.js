@@ -122,8 +122,8 @@ function FiberNode(
   mode: TypeOfMode,
 ) {
   // Instance
-  this.tag = tag;
-  this.key = key;
+  this.tag = tag; // HostRoot 3
+  this.key = key; // null
   this.elementType = null;
   this.type = null;
   this.stateNode = null;
@@ -136,13 +136,13 @@ function FiberNode(
 
   this.ref = null;
 
-  this.pendingProps = pendingProps;
+  this.pendingProps = pendingProps; // null
   this.memoizedProps = null;
   this.updateQueue = null;
   this.memoizedState = null;
   this.dependencies = null;
 
-  this.mode = mode;
+  this.mode = mode; // ConcurrentMode 1
 
   // Effects
   this.flags = NoFlags;
@@ -214,6 +214,11 @@ const createFiber = function(
   mode: TypeOfMode,
 ): Fiber {
   // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
+  
+  // tag HostRoot 3
+  // pendingProps null
+  // key null
+  // ConcurrentMode 1
   return new FiberNode(tag, pendingProps, key, mode);
 };
 
@@ -431,17 +436,25 @@ export function createHostRootFiber(
   concurrentUpdatesByDefaultOverride: null | boolean,
 ): Fiber {
   let mode;
+  // 当前恒等
   if (tag === ConcurrentRoot) {
+    // ConcurrentMode 1
     mode = ConcurrentMode;
+    // isStrictMode false
     if (isStrictMode === true) {
       mode |= StrictLegacyMode;
 
       if (enableStrictEffects) {
         mode |= StrictEffectsMode;
       }
-    } else if (enableStrictEffects && createRootStrictEffectsByDefault) {
+    }
+    // enableStrictEffects __DEV__
+    // createRootStrictEffectsByDefault false
+    else if (enableStrictEffects && createRootStrictEffectsByDefault) {
       mode |= StrictLegacyMode | StrictEffectsMode;
     }
+    // enableSyncDefaultUpdates false
+    // allowConcurrentByDefault false
     if (
       // We only use this flag for our repo tests to check both behaviors.
       // TODO: Flip this flag and rename it something like "forceConcurrentByDefaultForTesting"
@@ -461,7 +474,7 @@ export function createHostRootFiber(
     // Without some nodes in the tree having empty base times.
     mode |= ProfileMode;
   }
-
+  // 最后mode为ConcurrentMode
   return createFiber(HostRoot, null, null, mode);
 }
 

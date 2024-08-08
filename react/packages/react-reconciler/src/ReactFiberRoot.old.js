@@ -56,8 +56,8 @@ function FiberRootNode(
   identifierPrefix,
   onRecoverableError,
 ) {
-  this.tag = tag;
-  this.containerInfo = containerInfo;
+  this.tag = tag; // ConcurrentRoot 1
+  this.containerInfo = containerInfo; // 根节点
   this.pendingChildren = null;
   this.current = null;
   this.pingCache = null;
@@ -67,10 +67,10 @@ function FiberRootNode(
   this.pendingContext = null;
   this.callbackNode = null;
   this.callbackPriority = NoLane;
-  this.eventTimes = createLaneMap(NoLanes);
-  this.expirationTimes = createLaneMap(NoTimestamp);
+  this.eventTimes = createLaneMap(NoLanes); // Lane相关，目前未知作用
+  this.expirationTimes = createLaneMap(NoTimestamp); // Lane相关，目前未知作用 NoTimestamp -1
 
-  this.pendingLanes = NoLanes;
+  this.pendingLanes = NoLanes; // 一个预设二进制 0b0000000000000000000000000000000
   this.suspendedLanes = NoLanes;
   this.pingedLanes = NoLanes;
   this.expiredLanes = NoLanes;
@@ -80,8 +80,8 @@ function FiberRootNode(
   this.entangledLanes = NoLanes;
   this.entanglements = createLaneMap(NoLanes);
 
-  this.identifierPrefix = identifierPrefix;
-  this.onRecoverableError = onRecoverableError;
+  this.identifierPrefix = identifierPrefix; // ""
+  this.onRecoverableError = onRecoverableError; // 未知回调
 
   if (enableCache) {
     this.pooledCache = null;
@@ -145,28 +145,36 @@ export function createFiberRoot(
   onRecoverableError: null | ((error: mixed) => void),
   transitionCallbacks: null | TransitionTracingCallbacks,
 ): FiberRoot {
+  // 创建一个FiberRootNode
+  // 注意是FiberRootNode Fiber系统的RootNode
+  // 返回了一个由FiberRootNode new出来的对象
   const root: FiberRoot = (new FiberRootNode(
-    containerInfo,
-    tag,
-    hydrate,
-    identifierPrefix,
-    onRecoverableError,
+    containerInfo, // 根节点
+    tag, // ConcurrentRoot 1
+    hydrate, // false
+    identifierPrefix, // ""
+    onRecoverableError, // 未知回调
   ): any);
+  // 未知作用，先跳过
   if (enableSuspenseCallback) {
     root.hydrationCallbacks = hydrationCallbacks;
   }
-
+  // 未知作用，先跳过
   if (enableTransitionTracing) {
     root.transitionCallbacks = transitionCallbacks;
   }
 
   // Cyclic construction. This cheats the type system right now because
   // stateNode is any.
+  
+  // 看起来hostrootfiber跟传入参数无关
   const uninitializedFiber = createHostRootFiber(
-    tag,
-    isStrictMode,
-    concurrentUpdatesByDefaultOverride,
+    tag, // ConcurrentRoot 1
+    isStrictMode, // false
+    concurrentUpdatesByDefaultOverride, // 由createRoot传入false
   );
+  // 将FiberRoot和HostRootFiber关联
+  // 也是将FiberRootNode和FiberNode关联
   root.current = uninitializedFiber;
   uninitializedFiber.stateNode = root;
 
@@ -202,7 +210,8 @@ export function createFiberRoot(
     uninitializedFiber.memoizedState = initialState;
   }
 
+  // 初始化update队列
   initializeUpdateQueue(uninitializedFiber);
-
+  // 返回FiberRoot
   return root;
 }
