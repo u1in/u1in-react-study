@@ -141,7 +141,9 @@ if (__DEV__) {
 function getContextForSubtree(
   parentComponent: ?React$Component<any, any>,
 ): Object {
+  // 初次渲染时候parentComponent为null
   if (!parentComponent) {
+    // 直接返回了空对象
     return emptyContextObject;
   }
 
@@ -329,21 +331,33 @@ export function updateContainer(
   if (__DEV__) {
     onScheduleRoot(container, element);
   }
+  // container是fiberRoot
+  // 取current取到hostfibernode
   const current = container.current;
+  // 这里返回了一个当前时间
   const eventTime = requestEventTime();
+  // DefaultEventPriority
+  // 0b0000000000000000000000000010000
   const lane = requestUpdateLane(current);
-
+  // 一个常量，运行时是true
   if (enableSchedulingProfiler) {
+    // 啥也没干
     markRenderScheduled(lane);
   }
 
+  // 初次渲染时候parentComponent为null
+  // 计算出context为空对象{}
   const context = getContextForSubtree(parentComponent);
   if (container.context === null) {
+    // 进这里
+    // container为fiberRoot，其中context默认值为null
+    // 此刻赋予{}
     container.context = context;
   } else {
     container.pendingContext = context;
   }
-
+  
+  // 初次渲染没有进
   if (__DEV__) {
     if (
       ReactCurrentFiberIsRendering &&
@@ -361,11 +375,19 @@ export function updateContainer(
     }
   }
 
+  // eventTime为获取的当前时间
+  // lane为获取的当前事件的优先级
+  // DefaultEventPriority
+  // 0b0000000000000000000000000010000
+  // 构建出来一个update对象
   const update = createUpdate(eventTime, lane);
   // Caution: React DevTools currently depends on this property
   // being called "element".
+  // 给update对象的payload赋值
+  // element为render的第一个参数，根组件
   update.payload = {element};
-
+  
+  // 为null
   callback = callback === undefined ? null : callback;
   if (callback !== null) {
     if (__DEV__) {
@@ -380,8 +402,11 @@ export function updateContainer(
     update.callback = callback;
   }
 
+  // current为hostfiber，update为构造对象，lane为优先级
+  // 函数函数处理了一下hostfiber的queue，处理了update接环，更新了双缓存树fiber到root的lane，返回了root fiberRoot
   const root = enqueueUpdate(current, update, lane);
   if (root !== null) {
+    // root-fiberRoot current-hostFiberRoot lane-事件优先级 eventTime-事件时间
     scheduleUpdateOnFiber(root, current, lane, eventTime);
     entangleTransitions(root, current, lane);
   }
@@ -520,8 +545,10 @@ export {findHostInstanceWithWarning};
 export function findHostInstanceWithNoPortals(
   fiber: Fiber,
 ): PublicInstance | null {
+  // 初始渲染最终得到null
   const hostFiber = findCurrentHostFiberWithNoPortals(fiber);
   if (hostFiber === null) {
+    // 最终返回null
     return null;
   }
   return hostFiber.stateNode;

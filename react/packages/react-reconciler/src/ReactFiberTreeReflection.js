@@ -27,14 +27,18 @@ import {NoFlags, Placement, Hydrating} from './ReactFiberFlags';
 const ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
 
 export function getNearestMountedFiber(fiber: Fiber): null | Fiber {
+  // 目前是hostfibernode
   let node = fiber;
   let nearestMounted = fiber;
+  // 寻找双缓存树
   if (!fiber.alternate) {
+    // 进入这里只有一棵树，理解为还没有关联到另一颗树的新树
     // If there is no alternate, this might be a new tree that isn't inserted
     // yet. If it is, then it will have a pending insertion effect on it.
     let nextNode = node;
     do {
       node = nextNode;
+      // flag是NoFlags
       if ((node.flags & (Placement | Hydrating)) !== NoFlags) {
         // This is an insertion or in-progress hydration. The nearest possible
         // mounted fiber is the parent but we need to continue to figure out
@@ -48,9 +52,11 @@ export function getNearestMountedFiber(fiber: Fiber): null | Fiber {
       node = node.return;
     }
   }
+  // 初次渲染走这里
   if (node.tag === HostRoot) {
     // TODO: Check if this was a nested HostRoot when used with
     // renderContainerIntoSubtree.
+    // 把fiber原路返回
     return nearestMounted;
   }
   // If we didn't hit the root, that means that we're in an disconnected tree
@@ -120,9 +126,12 @@ function assertIsMounted(fiber) {
 }
 
 export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
+  // alternate 好像是所谓的双缓存，在初始化的时候alternate为null，没有另一棵树
   const alternate = fiber.alternate;
   if (!alternate) {
     // If there is no alternate, then we only need to check if it is mounted.
+    // 这个fiber是HostFiberNode
+    // 找到的nearestMounted是HostFiberNode自己
     const nearestMounted = getNearestMountedFiber(fiber);
 
     if (nearestMounted === null) {
@@ -132,6 +141,7 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
     if (nearestMounted !== fiber) {
       return null;
     }
+    // 返回自己
     return fiber;
   }
   // If we have two possible branches, we'll walk backwards up to the root
@@ -289,8 +299,11 @@ function findCurrentHostFiberImpl(node: Fiber) {
   return null;
 }
 
+// 这个函数是根据parent的Fiber去寻找东西
 export function findCurrentHostFiberWithNoPortals(parent: Fiber): Fiber | null {
+  // 返回hostfiber自己
   const currentParent = findCurrentFiberUsingSlowPath(parent);
+  // 最终return null
   return currentParent !== null
     ? findCurrentHostFiberWithNoPortalsImpl(currentParent)
     : null;
@@ -298,6 +311,7 @@ export function findCurrentHostFiberWithNoPortals(parent: Fiber): Fiber | null {
 
 function findCurrentHostFiberWithNoPortalsImpl(node: Fiber) {
   // Next we'll drill down this component to find the first HostComponent/Text.
+  // 这个tag应该是Concurrent 3
   if (node.tag === HostComponent || node.tag === HostText) {
     return node;
   }
@@ -313,6 +327,7 @@ function findCurrentHostFiberWithNoPortalsImpl(node: Fiber) {
     child = child.sibling;
   }
 
+  // hostfiber进来最终null出去
   return null;
 }
 

@@ -467,6 +467,7 @@ export function getEventPriority(domEventName: DOMEventName): * {
     case 'popstate':
     case 'select':
     case 'selectstart':
+      // 0b0000000000000000000000000000001
       return DiscreteEventPriority;
     case 'drag':
     case 'dragenter':
@@ -489,11 +490,13 @@ export function getEventPriority(domEventName: DOMEventName): * {
     case 'mouseleave':
     case 'pointerenter':
     case 'pointerleave':
+      // 0b0000000000000000000000000000100
       return ContinuousEventPriority;
     case 'message': {
       // We might be in the Scheduler callback.
       // Eventually this mechanism will be replaced by a check
       // of the current priority on the native scheduler.
+      // 会返回一个在schedule包里面的常量currentPriorityLevel
       const schedulerPriority = getCurrentSchedulerPriorityLevel();
       switch (schedulerPriority) {
         case ImmediateSchedulerPriority:
@@ -511,6 +514,8 @@ export function getEventPriority(domEventName: DOMEventName): * {
       }
     }
     default:
+      // 初次渲染最终走到这里
+      // 0b0000000000000000000000000010000
       return DefaultEventPriority;
   }
 }

@@ -366,8 +366,10 @@ export function createTextInstance(
 }
 
 export function getCurrentEventPriority(): * {
+  // 获取当前代码处于什么事件中
   const currentEvent = window.event;
   if (currentEvent === undefined) {
+    // 0b0000000000000000000000000010000
     return DefaultEventPriority;
   }
   return getEventPriority(currentEvent.type);

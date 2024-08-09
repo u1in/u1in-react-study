@@ -288,6 +288,7 @@ function unstable_wrapCallback(callback) {
   };
 }
 
+// 最终一个高价值的lane和一个callback被执行到这里
 function unstable_scheduleCallback(priorityLevel, callback, options) {
   var currentTime = getCurrentTime();
 

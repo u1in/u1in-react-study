@@ -416,6 +416,7 @@ let rootWithPassiveNestedUpdates: FiberRoot | null = null;
 // If two updates are scheduled within the same event, we should treat their
 // event times as simultaneous, even if the actual clock time has advanced
 // between the first and second call.
+// 如果同一个事件中存在两次update，则视为同一次更新
 let currentEventTime: number = NoTimestamp;
 let currentEventTransitionLane: Lanes = NoLanes;
 
@@ -426,16 +427,29 @@ export function getWorkInProgressRoot(): FiberRoot | null {
 }
 
 export function requestEventTime() {
+  // 这个函数有可能在react执行，有可能在浏览器事件中执行
+
+  // executionContext为本文件定义的NoContext 0b000
+  // 最终不进入这里
   if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
     // We're inside React, so it's fine to read the actual time.
     return now();
   }
   // We're not inside React, so we may be in the middle of a browser event.
+  // NoTimestamp为Lane模型中的一个常量 -1
+  // 这里判断如果不是初始值，则使用已有值
   if (currentEventTime !== NoTimestamp) {
     // Use the same start time for all updates until we enter React again.
     return currentEventTime;
   }
   // This is the first update since React yielded. Compute a new start time.
+  // 初次执行，赋予时间
+  // 来源于scheduler的包
+  // 根据运行环境决定使用
+  // performance.now
+  // 还是
+  // localDate.now() - initialTime;
+  // 一个例子数据 9607113.899999976
   currentEventTime = now();
   return currentEventTime;
 }
@@ -446,7 +460,11 @@ export function getCurrentTime() {
 
 export function requestUpdateLane(fiber: Fiber): Lane {
   // Special cases
+  // 此时的fiber是hostfibernode
+  // 此时的mode是ConcurrentMode为0b000000
+  // 值得区分的是ConcurrentRoot为1
   const mode = fiber.mode;
+  // 两个if都没进
   if ((mode & ConcurrentMode) === NoMode) {
     return (SyncLane: Lane);
   } else if (
@@ -466,6 +484,11 @@ export function requestUpdateLane(fiber: Fiber): Lane {
     return pickArbitraryLane(workInProgressRootRenderLanes);
   }
 
+  // requestCurrentTransition方法从React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED中
+  // 获取共享信息ReactCurrentBatchConfig中的.transition
+  // 尚未知道共享信息中有什么
+  // debugger看来具有ContextRegistry、ReactCunrrentActQueue、ReactCurrentBatchConfig、ReactCurrentDisapatcher、ReactCurrentOwner、ReactDebugCurrentFrame、Scheduler等
+  // 两者都为null于是isTransition为false
   const isTransition = requestCurrentTransition() !== NoTransition;
   if (isTransition) {
     if (__DEV__ && ReactCurrentBatchConfig.transition !== null) {
@@ -496,6 +519,8 @@ export function requestUpdateLane(fiber: Fiber): Lane {
   // The opaque type returned by the host config is internally a lane, so we can
   // use that directly.
   // TODO: Move this type conversion to the event priority module.
+  // Priority 优先权，看来是获取优先级相关的代码
+  // 目前没有什么任务，函数返回NoLane 0b0000000000000000000000000000000
   const updateLane: Lane = (getCurrentUpdatePriority(): any);
   if (updateLane !== NoLane) {
     return updateLane;
@@ -507,7 +532,10 @@ export function requestUpdateLane(fiber: Fiber): Lane {
   // The opaque type returned by the host config is internally a lane, so we can
   // use that directly.
   // TODO: Move this type conversion to the event priority module.
+  // 
   const eventLane: Lane = (getCurrentEventPriority(): any);
+  // DefaultEventPriority
+  // 0b0000000000000000000000000010000
   return eventLane;
 }
 
@@ -531,6 +559,7 @@ export function scheduleUpdateOnFiber(
   lane: Lane,
   eventTime: number,
 ) {
+  // 应该是处理一个更新次数的限制，有两个常量控制
   checkForNestedUpdates();
 
   if (__DEV__) {
@@ -546,8 +575,11 @@ export function scheduleUpdateOnFiber(
   }
 
   // Mark that the root has a pending update.
+  // 这个函数好像就只是把lane拆分的32位数组的index值赋予了时间事件 尚不知何用
   markRootUpdated(root, lane, eventTime);
 
+  // 第一次见workInProgressRoot 据说是缓存树的名字
+  // 最终没走这里
   if (
     (executionContext & RenderContext) !== NoLanes &&
     root === workInProgressRoot
@@ -572,7 +604,9 @@ export function scheduleUpdateOnFiber(
         addFiberToLanesMap(root, fiber, lane);
       }
     }
-
+    
+    // 到这里
+    // 没有要warn的
     warnIfUpdatesNotWrappedWithActDEV(fiber);
 
     if (enableProfilerTimer && enableProfilerNestedUpdateScheduledHook) {
@@ -605,7 +639,7 @@ export function scheduleUpdateOnFiber(
         addTransitionToLanesMap(root, transition, lane);
       }
     }
-
+    // 暂时没有另一棵树
     if (root === workInProgressRoot) {
       // Received an update to a tree that's in the middle of rendering. Mark
       // that there was an interleaved update work on this root. Unless the
@@ -631,7 +665,7 @@ export function scheduleUpdateOnFiber(
         markRootSuspended(root, workInProgressRootRenderLanes);
       }
     }
-
+    // 到这里
     ensureRootIsScheduled(root, eventTime);
     if (
       lane === SyncLane &&
@@ -689,13 +723,16 @@ export function isUnsafeClassRenderPhaseUpdate(fiber: Fiber) {
 // root has work on. This function is called on every update, and right before
 // exiting a task.
 function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
+  // null 没这个属性
   const existingCallbackNode = root.callbackNode;
 
   // Check if any lanes are being starved by other work. If so, mark them as
   // expired so we know to work on those next.
+  // 给一些设置好的lane设置过期时间
   markStarvedLanesAsExpired(root, currentTime);
 
   // Determine the next lanes to work on, and their priority.
+  // 返回了一个高价值的lane
   const nextLanes = getNextLanes(
     root,
     root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
@@ -809,13 +846,15 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
         schedulerPriorityLevel = NormalSchedulerPriority;
         break;
     }
+    // 到这里计算了多次最终得到一个更高价值的lane
     newCallbackNode = scheduleCallback(
       schedulerPriorityLevel,
       performConcurrentWorkOnRoot.bind(null, root),
     );
   }
-
+  // 应该是新的lane
   root.callbackPriority = newCallbackPriority;
+  // 应该是新的newTask对象
   root.callbackNode = newCallbackNode;
 }
 

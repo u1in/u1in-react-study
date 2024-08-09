@@ -186,13 +186,16 @@ function getHighestPriorityLanes(lanes: Lanes | Lane): Lanes {
 
 export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
   // Early bailout if there's no pending work left.
+  // markRootUpdated 设置的root.pendingLanes，在上一步设置了过期时间，在这一步被读取
   const pendingLanes = root.pendingLanes;
   if (pendingLanes === NoLanes) {
     return NoLanes;
   }
 
+  // 下一步归零?
   let nextLanes = NoLanes;
 
+  // 这两个值还没有被设置过，一直是初始值
   const suspendedLanes = root.suspendedLanes;
   const pingedLanes = root.pingedLanes;
 
@@ -213,6 +216,7 @@ export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
     // The only remaining work is Idle.
     const unblockedLanes = pendingLanes & ~suspendedLanes;
     if (unblockedLanes !== NoLanes) {
+      // 走到这里，获取一个更高价值的lane
       nextLanes = getHighestPriorityLanes(unblockedLanes);
     } else {
       if (pingedLanes !== NoLanes) {
@@ -288,6 +292,7 @@ export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
   // For those exceptions where entanglement is semantically important, like
   // useMutableSource, we should ensure that there is no partial work at the
   // time we apply the entanglement.
+  // 这个还是一个预设值NoLanes
   const entangledLanes = root.entangledLanes;
   if (entangledLanes !== NoLanes) {
     const entanglements = root.entanglements;
@@ -301,7 +306,7 @@ export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
       lanes &= ~lane;
     }
   }
-
+  // 直接返回了计算后的更高价值的lane
   return nextLanes;
 }
 
@@ -393,8 +398,9 @@ export function markStarvedLanesAsExpired(
   // TODO: This gets called every time we yield. We can optimize by storing
   // the earliest expiration time on the root. Then use that to quickly bail out
   // of this function.
-
+  // 这个比较关键，是根据当前事件合成的lane
   const pendingLanes = root.pendingLanes;
+  // 这些都是初始化的默认值
   const suspendedLanes = root.suspendedLanes;
   const pingedLanes = root.pingedLanes;
   const expirationTimes = root.expirationTimes;
@@ -403,20 +409,25 @@ export function markStarvedLanesAsExpired(
   // expiration time. If so, we'll assume the update is being starved and mark
   // it as expired to force it to finish.
   let lanes = pendingLanes;
+  // 位运算，头大
+  // 第一次16，第二次0退出
   while (lanes > 0) {
+    // 又获取lane的位数
     const index = pickArbitraryLaneIndex(lanes);
     const lane = 1 << index;
-
+    // 这个还是默认值，一堆-1
     const expirationTime = expirationTimes[index];
     if (expirationTime === NoTimestamp) {
       // Found a pending lane with no expiration time. If it's not suspended, or
       // if it's pinged, assume it's CPU-bound. Compute a new expiration time
       // using the current time.
+      // 处于某种考虑，给这个没有过期事件的？？设置过期时间
       if (
         (lane & suspendedLanes) === NoLanes ||
         (lane & pingedLanes) !== NoLanes
       ) {
         // Assumes timestamps are monotonically increasing.
+        // 走到这里，根据当前lane，设置不同的延后时间
         expirationTimes[index] = computeExpirationTime(lane, currentTime);
       }
     } else if (expirationTime <= currentTime) {
@@ -576,6 +587,7 @@ export function markRootUpdated(
   updateLane: Lane,
   eventTime: number,
 ) {
+  // 根据当前事件计算出合成lane
   root.pendingLanes |= updateLane;
 
   // If there are any suspended transitions, it's possible this new update
@@ -590,15 +602,19 @@ export function markRootUpdated(
   // We don't do this if the incoming update is idle, because we never process
   // idle updates until after all the regular updates have finished; there's no
   // way it could unblock a transition.
+  // 初次渲染判断为true
   if (updateLane !== IdleLane) {
+    // 应该是类似于置空两个参数
     root.suspendedLanes = NoLanes;
     root.pingedLanes = NoLanes;
   }
-
+  // 当前lane拆的数组
   const eventTimes = root.eventTimes;
+  // 这里计算这个lane去掉32位表示前面的0之后剩下的长度
   const index = laneToIndex(updateLane);
   // We can always overwrite an existing timestamp because we prefer the most
   // recent event, and we assume time is monotonically increasing.
+  // 给当前位置的lane赋予事件的时间
   eventTimes[index] = eventTime;
 }
 

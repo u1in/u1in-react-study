@@ -388,6 +388,7 @@ function commitBeforeMutationEffects_complete() {
 }
 
 function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
+  // 这里突然就有alternate了，等待下次分析
   const current = finishedWork.alternate;
   const flags = finishedWork.flags;
 
@@ -473,6 +474,7 @@ function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
       }
       case HostRoot: {
         if (supportsMutation) {
+          // 置换树?
           const root = finishedWork.stateNode;
           clearContainer(root.containerInfo);
         }

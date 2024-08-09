@@ -67,8 +67,8 @@ function FiberRootNode(
   this.pendingContext = null;
   this.callbackNode = null;
   this.callbackPriority = NoLane;
-  this.eventTimes = createLaneMap(NoLanes); // Lane相关，目前未知作用
-  this.expirationTimes = createLaneMap(NoTimestamp); // Lane相关，目前未知作用 NoTimestamp -1
+  this.eventTimes = createLaneMap(NoLanes); // Lane相关，目前未知作用 这里把lane32位标识拆成数组
+  this.expirationTimes = createLaneMap(NoTimestamp); // Lane相关，目前未知作用 NoTimestamp -1 这里把lane32位标识拆成数组
 
   this.pendingLanes = NoLanes; // 一个预设二进制 0b0000000000000000000000000000000
   this.suspendedLanes = NoLanes;

@@ -34,7 +34,9 @@ let concurrentQueues: Array<
 export function pushConcurrentUpdateQueue(
   queue: HookQueue<any, any> | ClassQueue<any>,
 ) {
+  // 还没有队列，初始化队列
   if (concurrentQueues === null) {
+    // 推入
     concurrentQueues = [queue];
   } else {
     concurrentQueues.push(queue);
@@ -115,9 +117,11 @@ export function enqueueConcurrentClassUpdate<State>(
   update: ClassUpdate<State>,
   lane: Lane,
 ) {
+  // 预设之后interleaved是null
   const interleaved = queue.interleaved;
   if (interleaved === null) {
     // This is the first update. Create a circular list.
+    // 注释说了，第一次update，创造环
     update.next = update;
     // At the end of the current render, this queue's interleaved updates will
     // be transferred to the pending queue.
@@ -126,8 +130,13 @@ export function enqueueConcurrentClassUpdate<State>(
     update.next = interleaved.next;
     interleaved.next = update;
   }
+  // 队列的interleaved值设置为这个update环
+  // 尚不知深意
   queue.interleaved = update;
 
+  // fiber为hostfibernode，lane为事件优先级
+  // 这里是根据fiber向上寻找，合成当前fiber到root的lane，同步处理另一个缓存树
+  // 最终返回root fiberRoot
   return markUpdateLaneFromFiberToRoot(fiber, lane);
 }
 
@@ -144,11 +153,19 @@ function markUpdateLaneFromFiberToRoot(
   lane: Lane,
 ): FiberRoot | null {
   // Update the source fiber's lanes
+  // 重新计算hostfibernode的lanes
+  // mergeLanes执行一个 a | b 或运算
+  // 初次执行为0 | 16
+  // 最终hostfiberNode lanes为16
   sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
+  // 尝试寻找alternate缓存树对应fiber
   let alternate = sourceFiber.alternate;
+  // 初次渲染alternate为null
   if (alternate !== null) {
     alternate.lanes = mergeLanes(alternate.lanes, lane);
   }
+  // sourceFiber.flags 为0
+  // 不进这里
   if (__DEV__) {
     if (
       alternate === null &&
@@ -160,6 +177,8 @@ function markUpdateLaneFromFiberToRoot(
   // Walk the parent path to the root and update the child lanes.
   let node = sourceFiber;
   let parent = sourceFiber.return;
+  // 寻找到当前树的顶端，计算当前事件lane和fiber的lane的mergeLane
+  // 初次渲染直接跳过了，因为就在最顶端了
   while (parent !== null) {
     parent.childLanes = mergeLanes(parent.childLanes, lane);
     alternate = parent.alternate;
@@ -175,7 +194,9 @@ function markUpdateLaneFromFiberToRoot(
     node = parent;
     parent = parent.return;
   }
+  // node即HostFiberNode
   if (node.tag === HostRoot) {
+    // 获取HostFiberNode的stateNode也就是获取FiberRoot
     const root: FiberRoot = node.stateNode;
     return root;
   } else {

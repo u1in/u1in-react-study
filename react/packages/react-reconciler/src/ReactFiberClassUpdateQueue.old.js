@@ -204,10 +204,10 @@ export function cloneUpdateQueue<State>(
 
 export function createUpdate(eventTime: number, lane: Lane): Update<*> {
   const update: Update<*> = {
-    eventTime,
-    lane,
+    eventTime, // 当前事件时间
+    lane, // 当前事件优先级
 
-    tag: UpdateState,
+    tag: UpdateState, // 默认值0
     payload: null,
     callback: null,
 
@@ -221,12 +221,14 @@ export function enqueueUpdate<State>(
   update: Update<State>,
   lane: Lane,
 ): FiberRoot | null {
+  // 取出createRoot中给hostfiber存的initializeUpdateQueue
   const updateQueue = fiber.updateQueue;
   if (updateQueue === null) {
     // Only occurs if the fiber has been unmounted.
     return null;
   }
 
+  // 这个是initializeUpdateQueue预设的
   const sharedQueue: SharedQueue<State> = (updateQueue: any).shared;
 
   if (__DEV__) {
@@ -244,6 +246,8 @@ export function enqueueUpdate<State>(
     }
   }
 
+  // 正常到这里
+  // fiber是hostfibernode
   if (isUnsafeClassRenderPhaseUpdate(fiber)) {
     // This is an unsafe render phase update. Add directly to the update
     // queue so we can process it immediately during the current render.
@@ -263,6 +267,11 @@ export function enqueueUpdate<State>(
     // currently renderings (a pattern that is accompanied by a warning).
     return unsafe_markUpdateLaneFromFiberToRoot(fiber, lane);
   } else {
+    // 正常走这里
+    // fiber是hostfiberNode，sharedQueue是initializeUpdateQueue的预设值
+    // update是createUpdate构造出来的对象
+    // lane为当前事件的优先级
+    // 该函数处理了一下fiber的queue，处理了update接环，更新了双缓存树fiber到root的lane
     return enqueueConcurrentClassUpdate(fiber, sharedQueue, update, lane);
   }
 }

@@ -93,6 +93,7 @@ function ReactDOMRoot(internalRoot: FiberRoot) {
 ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function(
   children: ReactNodeList,
 ): void {
+  // 这个_internalRoot就是上面ReactDOMRoot包装的FiberFoot
   const root = this._internalRoot;
   if (root === null) {
     throw new Error('Cannot update an unmounted root.');
@@ -115,10 +116,12 @@ ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = functio
           'one argument.',
       );
     }
-
+    // FiberRootNode中存着的根节点dom
     const container = root.containerInfo;
-
+    // 判断是否文本节点
     if (container.nodeType !== COMMENT_NODE) {
+      // root.current 指向 HostFiberNode
+      // 最终hostInstance为null 是正常的
       const hostInstance = findHostInstanceWithNoPortals(root.current);
       if (hostInstance) {
         if (hostInstance.parentNode !== container) {

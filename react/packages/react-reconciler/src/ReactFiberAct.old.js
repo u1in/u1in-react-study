@@ -45,6 +45,7 @@ export function isConcurrentActEnvironment() {
         ? IS_REACT_ACT_ENVIRONMENT
         : undefined;
 
+    // 关键在检查ReactCurrentActQueue中的current，是一个共享变量，目前看来是null
     if (!isReactActEnvironmentGlobal && ReactCurrentActQueue.current !== null) {
       // TODO: Include link to relevant documentation page.
       console.error(
@@ -52,6 +53,7 @@ export function isConcurrentActEnvironment() {
           'act(...)',
       );
     }
+    // 最终返回undefined 检查无误
     return isReactActEnvironmentGlobal;
   }
   return false;

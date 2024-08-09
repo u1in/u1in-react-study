@@ -306,6 +306,8 @@ function unstable_wrapCallback(callback) {
 }
 
 function unstable_scheduleCallback(priorityLevel, callback, options) {
+  // priorityLevel 是一个高价值lane
+  // callback是performConcurrentWorkOnRoot.bind(null, root),
   var currentTime = getCurrentTime();
 
   var startTime;
@@ -321,6 +323,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
   }
 
   var timeout;
+  // 根据lane计算他的过期时间
   switch (priorityLevel) {
     case ImmediatePriority:
       timeout = IMMEDIATE_PRIORITY_TIMEOUT;
@@ -340,8 +343,11 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
       break;
   }
 
+  // 计算过期时间
   var expirationTime = startTime + timeout;
 
+  // 根据新lane，新的过期时间，新的callback
+  // 构建新的task对象
   var newTask = {
     id: taskIdCounter++,
     callback,
@@ -370,7 +376,9 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
       requestHostTimeout(handleTimeout, startTime - currentTime);
     }
   } else {
+    // 新增一个sort变量，跟过期时间有关
     newTask.sortIndex = expirationTime;
+    // 推进空队列中
     push(taskQueue, newTask);
     if (enableProfiling) {
       markTaskStart(newTask, currentTime);
@@ -379,6 +387,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
     // Schedule a host callback, if needed. If we're already performing work,
     // wait until the next time we yield.
     if (!isHostCallbackScheduled && !isPerformingWork) {
+      // 最终会走到这里，加锁执行某个东西
       isHostCallbackScheduled = true;
       requestHostCallback(flushWork);
     }
@@ -580,9 +589,12 @@ if (typeof localSetImmediate === 'function') {
 }
 
 function requestHostCallback(callback) {
+  // callback是一个固定的flushWork callback
   scheduledHostCallback = callback;
+  // 加锁执行某个东西
   if (!isMessageLoopRunning) {
     isMessageLoopRunning = true;
+    // 往消息队列里面发了一个null消息
     schedulePerformWorkUntilDeadline();
   }
 }

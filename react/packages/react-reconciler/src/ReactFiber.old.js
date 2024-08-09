@@ -129,7 +129,7 @@ function FiberNode(
   this.stateNode = null;
 
   // Fiber
-  this.return = null;
+  this.return = null; // getNearestMountedFiber有段相关代码nextNode = node.return;
   this.child = null;
   this.sibling = null;
   this.index = 0;
